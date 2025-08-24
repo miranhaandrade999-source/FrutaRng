@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frutas RNG</title>
+    <style>
+        /* INÍCIO DO CSS */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #1a1a2e;
+            color: #e4e4e4;
+            margin: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            animation: none;
+        }
+
+        .event-overlay.adm-event {
+            background: radial-gradient(circle, rgba(255,0,255,0.2) 0%, rgba(255,0,255,0) 70%);
+            opacity: 1;
+            animation: pulse-purple 2s infinite alternate;
+        }
+
+        @keyframes pulse-purple {
+            from { box-shadow: 0 0 20px 5px rgba(255,0,255,0.5); }
+            to { box-shadow: 0 0 40px 15px rgba(255,0,255,0.7); }
+        }
+
+        .container {
+            text-align: center;
+            background: #2a2a4a;
+            padding: 2.5rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 2px solid #5a5a7a;
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #e0acff;
+            margin-bottom: 1.5rem;
+        }
+        
+        #login-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .login-input {
+            width: 80%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 2px solid #5a5a7a;
+            border-radius: 8px;
+            background-color: #1e1e3e;
+            color: white;
+        }
+
+        .display {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            background: #3a3a6a;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+        }
+
+        .slots-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .slot-display {
+            text-align: center;
+        }
+
+        .slot {
+            width: 90px;
+            height: 90px;
+            border: 3px solid #e0acff;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3.5rem;
+            background-color: #1e1e3e;
+            box-shadow: 0 0 10px rgba(224, 172, 255, 0.5);
+            transition: transform 0.1s ease-out;
+            margin-bottom: 10px;
+        }
+        
+        .slot-info {
+            font-size: 1rem;
+            font-weight: bold;
+            height: 40px;
+        }
+        
+        #session-timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.9rem;
+            color: #ccc;
+        }
+
+        #logout-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2rem;
+            color: #dc3545;
+            background: none;
+            border: none;
+            cursor: pointer;
+            z-index: 20;
+            line-height: 1;
+        }
+
+        #logout-btn:hover {
+            color: #ff6347;
+        }
+
+        .event-info {
+            font-size: 1rem;
+            color: #e0acff;
+            margin-bottom: 1rem;
+            min-height: 20px;
+        }
+        
+        .event-info.countdown {
+            color: #28a745;
+        }
+
+        /* Cores de Raridade */
+        .rarity-Comum { border-color: #6c757d; color: #6c757d; }
+        .rarity-Incomum { border-color: #28a745; color: #28a745; }
+        .rarity-Rara { border-color: #007bff; color: #007bff; }
+        .rarity-Epica { border-color: #6f42c1; color: #6f42c1; }
+        .rarity-Lendaria { border-color: #ffc107; color: #ffc107; }
+        .rarity-Mistica { border-color: #dc3545; color: #dc3545; }
+        .rarity-God { border-color: #ff7f50; color: #ff7f50; }
+        .rarity-Demon { border-color: #8b0000; color: #8b0000; }
+        .rarity-Secret { border-color: #00ffff; color: #00ffff; }
+        .rarity-Divine { border-color: #ff00ff; color: #ff00ff; }
+        .rarity-ADM { border-color: #ff00ff; color: #ff00ff; }
+
+        button {
+            padding: 0.75rem 1.8rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #e0acff;
+            color: #1a1a2e;
+            font-weight: bold;
+            margin: 0 0.5rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        
+        .menu-buttons {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        button.rebirth-btn {
+            background-color: #f07447;
+            color: #1a1a2e;
+        }
+        
+        button.admin-btn {
+            background-color: #ffc107;
+            color: #1a1a2e;
+        }
+
+        button.petshop-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #ff99ff;
+            transform: translateY(-2px);
+        }
+        
+        button.admin-btn:hover:not(:disabled) {
+            background-color: #ffd766;
+        }
+
+        button.rebirth-btn:hover:not(:disabled) {
+            background-color: #ffa583;
+        }
+
+        button.petshop-btn:hover:not(:disabled) {
+            background-color: #66BB6A;
+        }
+
+        button:disabled {
+            background-color: #5a5a7a;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .cost-info {
+            font-size: 0.9rem;
+            color: #bbb;
+            margin-top: 5px;
+        }
+        
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #dc3545;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            font-size: 1.1rem;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 11;
+        }
+
+        .notification.show {
+            opacity: 1;
+        }
+
+        /* Estilos do Modal de Eventos do ADM */
+        #adm-message-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            font-size: 1.2rem;
+            z-index: 12;
+            text-align: center;
+            box-shadow: 0 0 20px 5px rgba(255, 0, 255, 0.5);
+            display: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 10;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #2a2a4a;
+            color: #e4e4e4;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(224, 172, 255, 0.4);
+            width: 90%;
+            max-width: 700px;
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid #e0acff;
+        }
+        
+        .catalog-section {
+            margin-bottom: 2rem;
+        }
+        
+        .catalog-section h3 {
+            border-bottom: 2px solid;
+            padding-bottom: 5px;
+            margin-bottom: 1rem;
+        }
+
+        .item-grid {
+            margin-top: 1.5rem;
+            display: grid;
+            gap: 1.2rem;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+
+        .item {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            background-color: #3a3a6a;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            border: 1px solid #5a5a7a;
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+        
+        .item.inventory-item:hover {
+            transform: scale(1.03);
+            background-color: #4a4a7a;
+        }
+
+        .item.unobtained {
+            opacity: 0.5;
+            filter: grayscale(100%);
+        }
+
+        .item.equiped {
+            border: 3px solid #ffc107;
+            box-shadow: 0 0 10px 2px #ffc107;
+        }
+
+        .item span {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .item p {
+            margin: 0 0 3px 0;
+            font-weight: bold;
+        }
+
+        .item small {
+            display: block;
+            color: #ccc;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #e0acff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #ff99ff;
+        }
+        
+        /* Estilos do Painel de Rebirth */
+        .rebirth-info {
+            text-align: left;
+        }
+
+        .rebirth-stage {
+            border: 2px solid #5a5a7a;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .rebirth-stage.unlocked {
+            border-color: #28a745;
+        }
+        
+        .rebirth-stage h4 {
+            margin-top: 0;
+            color: #ffc107;
+        }
+
+        .rebirth-stage p {
+            margin: 5px 0;
+        }
+        
+        .rebirth-stage button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+        }
+
+        .rebirth-stage button:disabled {
+            background-color: #6c757d;
+        }
+        
+        #inventory-total-income {
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: #28a745;
+            background-color: #1e1e3e;
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        #admin-panel .item-grid {
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        }
+
+        #admin-panel .item {
+            cursor: pointer;
+        }
+        
+        #admin-panel .item:hover {
+            transform: scale(1.03);
+            background-color: #4a4a7a;
+        }
+
+        #admin-event-control {
+            margin-top: 2rem;
+        }
+        #admin-event-control h4 {
+            color: #ffc107;
+        }
+        #admin-event-control .event-buttons button {
+            margin: 5px;
+        }
+
+        #merchant-timer {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background-color: #4a4a7a;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            z-index: 10;
+        }
+
+        #merchant-modal .item {
+            padding: 15px;
+        }
+        
+        #merchant-modal .item button {
+            margin-top: 10px;
+            padding: 5px 10px;
+            font-size: 0.9rem;
+            background-color: #28a745;
+        }
+
+        /* FIM DO CSS */
+    </style>
+</head>
+<body>
+    <div class="event-overlay" id="event-overlay"></div>
+    <div class="container">
+        <h1>Frutas RNG 🎰</h1>
+
+        <div id="login-panel">
+            <h2>Bem-vindo!</h2>
+            <input type="text" id="username-input" placeholder="Nome de Usuário" class="login-input">
+            <input type="password" id="password-input" placeholder="Senha" class="login-input">
+            <button id="login-btn">Entrar/Criar Conta</button>
+        </div>
+
+        <div id="game-panel" style="display: none;">
+            <div id="session-timer" style="display:none;"></div>
+            <button id="logout-btn" style="display:none;">&times;</button>
+            <div class="display">
+                Dinheiro: $<span id="money">0.00</span> 💸
+            </div>
+            <p>Rebirths: <span id="rebirth-count">0</span> 🔄 | Capacidade: <span id="inventory-capacity-display">10</span> 📦</p>
+
+            <div class="slots-container">
+                <div class="slot-display">
+                    <div class="slot" id="slot1">?</div>
+                    <div class="slot-info">
+                        <p id="fruit-name"></p>
+                        <p id="fruit-rarity"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="event-info" id="event-timer-display"></div>
+
+            <button id="spin-btn">Girar Fruta</button>
+            <span class="cost-info" id="spin-cost">1º Giro Grátis!</span>
+            <div class="menu-buttons">
+                <button id="inventory-btn">Inventário 🎒</button>
+                <button id="catalog-btn">Catálogo 📖</button>
+                <button id="rebirth-btn" class="rebirth-btn">Rebirth 🔄</button>
+                <button id="petshop-btn" class="petshop-btn">Pet Shop 🐶</button>
+                <button id="admin-btn" class="admin-btn" style="display: none;">Admin Panel 🛠️</button>
+            </div>
+        </div>
+
+        <div id="inventory" class="modal">
+            <div class="modal-content">
+                <h2>Seu Inventário 🎒</h2>
+                <div id="inventory-total-income">Renda Passiva Total: $0.00/s</div>
+                <div id="inventory-list" class="item-grid"></div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+        
+        <div id="catalog" class="modal">
+            <div class="modal-content">
+                <h2>Catálogo de Frutas 📖</h2>
+                <div id="catalog-list"></div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+        
+        <div id="rebirth-modal" class="modal">
+            <div class="modal-content">
+                <h2>Rebirth 🔄</h2>
+                <div id="rebirth-list" class="rebirth-info"></div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+        
+        <div id="admin-panel" class="modal">
+            <div class="modal-content">
+                <h2>Admin Panel 🛠️</h2>
+                <div id="admin-event-control">
+                    <h4>Ativar Evento</h4>
+                    <div class="event-buttons">
+                        <button id="adm-event-money">Dinheiro</button>
+                        <button id="adm-event-discount">Desconto</button>
+                        <button id="adm-event-adm">Evento ADM</button>
+                    </div>
+                </div>
+                <div id="admin-fruit-spawn">
+                    <h4>Spawnar Fruta</h4>
+                    <p>Clique em uma fruta para adicioná-la ao seu inventário.</p>
+                    <div id="admin-fruit-list" class="item-grid"></div>
+                </div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+        
+        <div id="petshop-modal" class="modal">
+            <div class="modal-content">
+                <h2>Pet Shop 🐶</h2>
+                <div id="petshop-list" class="item-grid"></div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+
+        <div id="merchant-modal" class="modal">
+            <div class="modal-content">
+                <h2>Comerciante de Frutas 🤝</h2>
+                <p>Aqui estão as frutas que tenho para vender:</p>
+                <div id="merchant-list" class="item-grid"></div>
+                <button class="close-btn">&times;</button>
+            </div>
+        </div>
+
+        <div id="adm-message-container">
+            <span id="adm-message"></span>
+        </div>
+        
+        <div id="notification-message" class="notification"></div>
+        <div id="merchant-timer">Comerciante em: 60s</div>
+    </div>
+
+    <script>
+        /* INÍCIO DO JAVASCRIPT */
+        const loginPanel = document.getElementById('login-panel');
+        const gamePanel = document.getElementById('game-panel');
+        const usernameInput = document.getElementById('username-input');
+        const passwordInput = document.getElementById('password-input');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const moneyDisplay = document.getElementById('money');
+        const slot = document.getElementById('slot1');
+        const fruitNameDisplay = document.getElementById('fruit-name');
+        const fruitRarityDisplay = document.getElementById('fruit-rarity');
+        const spinBtn = document.getElementById('spin-btn');
+        const spinCostDisplay = document.getElementById('spin-cost');
+        const inventoryBtn = document.getElementById('inventory-btn');
+        const catalogBtn = document.getElementById('catalog-btn');
+        const rebirthBtn = document.getElementById('rebirth-btn');
+        const adminBtn = document.getElementById('admin-btn');
+        const petshopBtn = document.getElementById('petshop-btn');
+        const inventoryModal = document.getElementById('inventory');
+        const catalogModal = document.getElementById('catalog');
+        const rebirthModal = document.getElementById('rebirth-modal');
+        const adminPanel = document.getElementById('admin-panel');
+        const petshopModal = document.getElementById('petshop-modal');
+        const merchantModal = document.getElementById('merchant-modal');
+        const inventoryCapacityDisplay = document.getElementById('inventory-capacity-display');
+        const rebirthCountDisplay = document.getElementById('rebirth-count');
+        const inventoryList = document.getElementById('inventory-list');
+        const inventoryTotalIncomeDisplay = document.getElementById('inventory-total-income');
+        const catalogList = document.getElementById('catalog-list');
+        const rebirthList = document.getElementById('rebirth-list');
+        const adminFruitList = document.getElementById('admin-fruit-list');
+        const petshopList = document.getElementById('petshop-list');
+        const merchantList = document.getElementById('merchant-list');
+        const closeBtns = document.querySelectorAll('.close-btn');
+        const notificationMessage = document.getElementById('notification-message');
+        const eventOverlay = document.getElementById('event-overlay');
+        const admMessageContainer = document.getElementById('adm-message-container');
+        const admMessageDisplay = document.getElementById('adm-message');
+        const eventTimerDisplay = document.getElementById('event-timer-display');
+        const merchantTimerDisplay = document.getElementById('merchant-timer');
+        const admEventMoneyBtn = document.getElementById('adm-event-money');
+        const admEventDiscountBtn = document.getElementById('adm-event-discount');
+        const admEventAdmBtn = document.getElementById('adm-event-adm');
+        const sessionTimerDisplay = document.getElementById('session-timer');
+
+        let money = 0;
+        let inventory = {};
+        let firstSpin = true;
+        let rebirthCount = 0;
+        let inventoryCapacity = 10;
+        let obtainedFruits = [];
+        let obtainedPets = [];
+        let equippedPet = null;
+        let loggedInUser = null;
+        let spinCount = 0;
+        const SPINS_FOR_DISCOUNT = 20;
+        const BASE_SPIN_COST = 150;
+        let currentSpinCost = BASE_SPIN_COST;
+        let activeEvent = null;
+        let eventInterval;
+        let eventCountdown = 0;
+        let merchantInterval;
+        let merchantCountdown = 60;
+        let admMessageInterval;
+        let sessionTimerInterval;
+        let sessionStartTime = 0;
+        let sessionElapsedTime = 0;
+
+        const ADMIN_USER = "ADM123";
+        const ADMIN_PASS = "ADM123";
+
+        const fruits = [
+            // Frutas Comuns (65) - Chance: 70%
+            { name: "Maçã", rarity: "Comum", emoji: "🍎", value: 50, chance: 1.07 },
+            { name: "Laranja", rarity: "Comum", emoji: "🍊", value: 60, chance: 1.07 },
+            { name: "Banana", rarity: "Comum", emoji: "🍌", value: 75, chance: 1.07 },
+            { name: "Uva Verde", rarity: "Comum", emoji: "🍇", value: 65, chance: 1.07 },
+            { name: "Pera", rarity: "Comum", emoji: "🍐", value: 55, chance: 1.07 },
+            { name: "Pêssego", rarity: "Comum", emoji: "🍑", value: 70, chance: 1.07 },
+            { name: "Cereja", rarity: "Comum", emoji: "🍒", value: 80, chance: 1.07 },
+            { name: "Limão", rarity: "Comum", emoji: "🍋", value: 85, chance: 1.07 },
+            { name: "Melão", rarity: "Comum", emoji: "🍈", value: 90, chance: 1.07 },
+            { name: "Coco", rarity: "Comum", emoji: "🥥", value: 95, chance: 1.07 },
+            { name: "Abacate", rarity: "Comum", emoji: "🥑", value: 100, chance: 1.07 },
+            { name: "Tomate", rarity: "Comum", emoji: "🍅", value: 105, chance: 1.07 },
+            { name: "Kiwi", rarity: "Comum", emoji: "🥝", value: 110, chance: 1.07 },
+            { name: "Abacaxi", rarity: "Comum", emoji: "🍍", value: 115, chance: 1.07 },
+            { name: "Manga", rarity: "Comum", emoji: "🥭", value: 120, chance: 1.07 },
+            { name: "Framboesa", rarity: "Comum", emoji: "🍇", value: 125, chance: 1.07 },
+            { name: "Romã", rarity: "Comum", emoji: "🍎", value: 130, chance: 1.07 },
+            { name: "Morango", rarity: "Comum", emoji: "🍓", value: 135, chance: 1.07 },
+            { name: "Amora", rarity: "Comum", emoji: "🫐", value: 140, chance: 1.07 },
+            { name: "Mirtilo", rarity: "Comum", emoji: "🫐", value: 145, chance: 1.07 },
+            { name: "Caju", rarity: "Comum", emoji: "🥜", value: 150, chance: 1.07 },
+            { name: "Cacau", rarity: "Comum", emoji: "🍫", value: 155, chance: 1.07 },
+            { name: "Ameixa", rarity: "Comum", emoji: "🍑", value: 160, chance: 1.07 },
+            { name: "Damasco", rarity: "Comum", emoji: "🧡", value: 165, chance: 1.07 },
+            { name: "Figo", rarity: "Comum", emoji: "🫐", value: 170, chance: 1.07 },
+            { name: "Goiaba", rarity: "Comum", emoji: "🍈", value: 175, chance: 1.07 },
+            { name: "Limão Siciliano", rarity: "Comum", emoji: "🍋", value: 180, chance: 1.07 },
+            { name: "Lichia", rarity: "Comum", emoji: "🔴", value: 185, chance: 1.07 },
+            { name: "Tamarindo", rarity: "Comum", emoji: "🌰", value: 190, chance: 1.07 },
+            { name: "Cenoura", rarity: "Comum", emoji: "🥕", value: 195, chance: 1.07 },
+            { name: "Milho", rarity: "Comum", emoji: "🌽", value: 200, chance: 1.07 },
+            { name: "Brocolis", rarity: "Comum", emoji: "🥦", value: 205, chance: 1.07 },
+            { name: "Berinjela", rarity: "Comum", emoji: "🍆", value: 210, chance: 1.07 },
+            { name: "Batata", rarity: "Comum", emoji: "🥔", value: 215, chance: 1.07 },
+            { name: "Pimentão", rarity: "Comum", emoji: "🫑", value: 220, chance: 1.07 },
+            { name: "Cebola", rarity: "Comum", emoji: "🧅", value: 225, chance: 1.07 },
+            { name: "Alho", rarity: "Comum", emoji: "🧄", value: 230, chance: 1.07 },
+            { name: "Pimenta", rarity: "Comum", emoji: "🌶️", value: 235, chance: 1.07 },
+            { name: "Pepino", rarity: "Comum", emoji: "🥒", value: 240, chance: 1.07 },
+            { name: "Alface", rarity: "Comum", emoji: "🥬", value: 245, chance: 1.07 },
+            { name: "Espinafre", rarity: "Comum", emoji: "🍃", value: 250, chance: 1.07 },
+            { name: "Couve-flor", rarity: "Comum", emoji: "🥦", value: 255, chance: 1.07 },
+            { name: "Cogumelo", rarity: "Comum", emoji: "🍄", value: 260, chance: 1.07 },
+            { name: "Beterraba", rarity: "Comum", emoji: "🔴", value: 265, chance: 1.07 },
+            { name: "Rabanete", rarity: "Comum", emoji: "⚪", value: 270, chance: 1.07 },
+            { name: "Vagem", rarity: "Comum", emoji: "🟢", value: 275, chance: 1.07 },
+            { name: "Abóbora", rarity: "Comum", emoji: "🎃", value: 280, chance: 1.07 },
+            { name: "Nabo", rarity: "Comum", emoji: "⚪", value: 285, chance: 1.07 },
+            { name: "Alcachofra", rarity: "Comum", emoji: "💚", value: 290, chance: 1.07 },
+            { name: "Aspargo", rarity: "Comum", emoji: "🟢", value: 295, chance: 1.07 },
+            { name: "Acelga", rarity: "Comum", emoji: "🥬", value: 300, chance: 1.07 },
+            { name: "Erva Doce", rarity: "Comum", emoji: "🌿", value: 305, chance: 1.07 },
+            { name: "Rúcula", rarity: "Comum", emoji: "🍃", value: 310, chance: 1.07 },
+            { name: "Bambu", rarity: "Comum", emoji: "🎍", value: 315, chance: 1.07 },
+            { name: "Trigo", rarity: "Comum", emoji: "🌾", value: 320, chance: 1.07 },
+            { name: "Arroz", rarity: "Comum", emoji: "🍚", value: 325, chance: 1.07 },
+            { name: "Soja", rarity: "Comum", emoji: "🌱", value: 330, chance: 1.07 },
+            { name: "Feijão", rarity: "Comum", emoji: "🫘", value: 335, chance: 1.07 },
+            { name: "Lentilha", rarity: "Comum", emoji: "🫘", value: 340, chance: 1.07 },
+            { name: "Grão de Bico", rarity: "Comum", emoji: "🫘", value: 345, chance: 1.07 },
+            { name: "Milhete", rarity: "Comum", emoji: "🌾", value: 350, chance: 1.07 },
+            { name: "Aveia", rarity: "Comum", emoji: "🌾", value: 355, chance: 1.07 },
+            { name: "Malagueta", rarity: "Comum", emoji: "🌶️", value: 360, chance: 1.07 },
+            { name: "Gengibre", rarity: "Comum", emoji: "🫚", value: 365, chance: 1.07 },
+            { name: "Alho Poró", rarity: "Comum", emoji: "🧅", value: 370, chance: 1.07 },
+            
+            // Frutas Incomuns (45) - Chance: 20%
+            { name: "Açaí", rarity: "Incomum", emoji: "💜", value: 400, chance: 0.44 },
+            { name: "Carambola", rarity: "Incomum", emoji: "⭐", value: 425, chance: 0.44 },
+            { name: "Pitaya Rosa", rarity: "Incomum", emoji: "💖", value: 450, chance: 0.44 },
+            { name: "Maracujá", rarity: "Incomum", emoji: "🟡", value: 475, chance: 0.44 },
+            { name: "Cajá", rarity: "Incomum", emoji: "🟠", value: 500, chance: 0.44 },
+            { name: "Sapoti", rarity: "Incomum", emoji: "🟤", value: 525, chance: 0.44 },
+            { name: "Physalis", rarity: "Incomum", emoji: "🍊", value: 550, chance: 0.44 },
+            { name: "Jabuticaba", rarity: "Incomum", emoji: "⚫", value: 575, chance: 0.44 },
+            { name: "Jambo", rarity: "Incomum", emoji: "🩷", value: 600, chance: 0.44 },
+            { name: "Cajá-Manga", rarity: "Incomum", emoji: "🟡", value: 625, chance: 0.44 },
+            { name: "Jenipapo", rarity: "Incomum", emoji: "⚫", value: 650, chance: 0.44 },
+            { name: "Acerola", rarity: "Incomum", emoji: "🍒", value: 675, chance: 0.44 },
+            { name: "Mamão", rarity: "Incomum", emoji: "🥭", value: 700, chance: 0.44 },
+            { name: "Nectarina", rarity: "Incomum", emoji: "🍑", value: 725, chance: 0.44 },
+            { name: "Tangerina", rarity: "Incomum", emoji: "🍊", value: 750, chance: 0.44 },
+            { name: "Seriguela", rarity: "Incomum", emoji: "🔴", value: 775, chance: 0.44 },
+            { name: "Ingá", rarity: "Incomum", emoji: "⚪", value: 800, chance: 0.44 },
+            { name: "Cagaita", rarity: "Incomum", emoji: "🟡", value: 825, chance: 0.44 },
+            { name: "Umbu", rarity: "Incomum", emoji: "🟢", value: 850, chance: 0.44 },
+            { name: "Cabeludinha", rarity: "Incomum", emoji: "🟠", value: 875, chance: 0.44 },
+            { name: "Cambuci", rarity: "Incomum", emoji: "🟢", value: 900, chance: 0.44 },
+            { name: "Murici", rarity: "Incomum", emoji: "🟡", value: 925, chance: 0.44 },
+            { name: "Araçá", rarity: "Incomum", emoji: "💛", value: 950, chance: 0.44 },
+            { name: "Pequi", rarity: "Incomum", emoji: "🧡", value: 975, chance: 0.44 },
+            { name: "Feijoa", rarity: "Incomum", emoji: "🥝", value: 1000, chance: 0.44 },
+            { name: "Loquat", rarity: "Incomum", emoji: "🟠", value: 1025, chance: 0.44 },
+            { name: "Salak", rarity: "Incomum", emoji: "🐍", value: 1050, chance: 0.44 },
+            { name: "Rambutan", rarity: "Incomum", emoji: "🔴", value: 1075, chance: 0.44 },
+            { name: "Longan", rarity: "Incomum", emoji: "⚪", value: 1100, chance: 0.44 },
+            { name: "Mangostim", rarity: "Incomum", emoji: "💜", value: 1125, chance: 0.44 },
+            { name: "Pitomba", rarity: "Incomum", emoji: "🟡", value: 1150, chance: 0.44 },
+            { name: "Pinha", rarity: "Incomum", emoji: "🟢", value: 1175, chance: 0.44 },
+            { name: "Sapucaia", rarity: "Incomum", emoji: "🟤", value: 1200, chance: 0.44 },
+            { name: "Buriti", rarity: "Incomum", emoji: "🟠", value: 1225, chance: 0.44 },
+            { name: "Carnaúba", rarity: "Incomum", emoji: "🌴", value: 1250, chance: 0.44 },
+            { name: "Coco da Bahia", rarity: "Incomum", emoji: "🥥", value: 1275, chance: 0.44 },
+            { name: "Groselha", rarity: "Incomum", emoji: "🍇", value: 1300, chance: 0.44 },
+            { name: "Cupuassu", rarity: "Incomum", emoji: "🟤", value: 1325, chance: 0.44 },
+            { name: "Jambo Roxo", rarity: "Incomum", emoji: "💜", value: 1350, chance: 0.44 },
+            { name: "Abacaxi Pérola", rarity: "Incomum", emoji: "🍍", value: 1375, chance: 0.44 },
+            { name: "Manga Palmer", rarity: "Incomum", emoji: "🥭", value: 1400, chance: 0.44 },
+            { name: "Maçã Gala", rarity: "Incomum", emoji: "🍎", value: 1425, chance: 0.44 },
+            { name: "Banana Prata", rarity: "Incomum", emoji: "🍌", value: 1450, chance: 0.44 },
+            { name: "Maracujá Doce", rarity: "Incomum", emoji: "🟡", value: 1475, chance: 0.44 },
+            { name: "Melancia Mini", rarity: "Incomum", emoji: "🍉", value: 1500, chance: 0.44 },
+            
+            // Frutas Raras (30) - Chance: 8.5%
+            { name: "Fruta-do-Conde", rarity: "Rara", emoji: "🍐", value: 2000, chance: 0.283 },
+            { name: "Bacuri", rarity: "Rara", emoji: "🟡", value: 2150, chance: 0.283 },
+            { name: "Guaraná", rarity: "Rara", emoji: "👀", value: 2300, chance: 0.283 },
+            { name: "Biribá", rarity: "Rara", emoji: "🟢", value: 2450, chance: 0.283 },
+            { name: "Araticum", rarity: "Rara", emoji: "🟤", value: 2600, chance: 0.283 },
+            { name: "Mangaba", rarity: "Rara", emoji: "🍊", value: 2750, chance: 0.283 },
+            { name: "Graviola", rarity: "Rara", emoji: "🍈", value: 2900, chance: 0.283 },
+            { name: "Jaca", rarity: "Rara", emoji: "🍈", value: 3050, chance: 0.283 },
+            { name: "Ambrosia", rarity: "Rara", emoji: "🍯", value: 3200, chance: 0.283 },
+            { name: "Atemoia", rarity: "Rara", emoji: "🍏", value: 3350, chance: 0.283 },
+            { name: "Jamelão", rarity: "Rara", emoji: "🍇", value: 3500, chance: 0.283 },
+            { name: "Pindaíba", rarity: "Rara", emoji: "🍍", value: 3650, chance: 0.283 },
+            { name: "Cagaita", rarity: "Rara", emoji: "🟡", value: 3800, chance: 0.283 },
+            { name: "Juçara", rarity: "Rara", emoji: "💜", value: 3950, chance: 0.283 },
+            { name: "Abiu", rarity: "Rara", emoji: "🍋", value: 4100, chance: 0.283 },
+            { name: "Cajá-Mirim", rarity: "Rara", emoji: "🧡", value: 4250, chance: 0.283 },
+            { name: "Pau-Ferro", rarity: "Rara", emoji: "🪵", value: 4400, chance: 0.283 },
+            { name: "Mutamba", rarity: "Rara", emoji: "🥜", value: 4550, chance: 0.283 },
+            { name: "Pitangatuba", rarity: "Rara", emoji: "🔴", value: 4700, chance: 0.283 },
+            { name: "Pitaya Roxa", rarity: "Rara", emoji: "💜", value: 4850, chance: 0.283 },
+            { name: "Melão de São Caetano", rarity: "Rara", emoji: "🍈", value: 5000, chance: 0.283 },
+            { name: "Inhame", rarity: "Rara", emoji: "🍠", value: 5150, chance: 0.283 },
+            { name: "Mandioca", rarity: "Rara", emoji: "🍠", value: 5300, chance: 0.283 },
+            { name: "Milho Roxo", rarity: "Rara", emoji: "🌽", value: 5450, chance: 0.283 },
+            { name: "Batata Doce", rarity: "Rara", emoji: "🍠", value: 5600, chance: 0.283 },
+            { name: "Taro", rarity: "Rara", emoji: "🥔", value: 5750, chance: 0.283 },
+            { name: "Yacon", rarity: "Rara", emoji: "🥔", value: 5900, chance: 0.283 },
+            { name: "Guaçatonga", rarity: "Rara", emoji: "🍃", value: 6050, chance: 0.283 },
+            { name: "Pinhão", rarity: "Rara", emoji: "🌰", value: 6200, chance: 0.283 },
+            { name: "Cupuaçu Gigante", rarity: "Rara", emoji: "🟤", value: 6350, chance: 0.283 },
+
+            // Frutas Épicas (20) - Chance: 1.25%
+            { name: "Fruta-pão", rarity: "Epica", emoji: "🥖", value: 7500, chance: 0.0625 },
+            { name: "Pitaia Amarela", rarity: "Epica", emoji: "💛", value: 8000, chance: 0.0625 },
+            { name: "Noni", rarity: "Epica", emoji: "🤢", value: 8500, chance: 0.0625 },
+            { name: "Rambutão Amarelo", rarity: "Epica", emoji: "🍋", value: 9000, chance: 0.0625 },
+            { name: "Maçã de Elefante", rarity: "Epica", emoji: "🐘", value: 9500, chance: 0.0625 },
+            { name: "Fruta-do-Milagre", rarity: "Epica", emoji: "✨", value: 10000, chance: 0.0625 },
+            { name: "Fruta-do-Dragão", rarity: "Epica", emoji: "🐉", value: 10500, chance: 0.0625 },
+            { name: "Kiwi Dourado", rarity: "Epica", emoji: "💛", value: 11000, chance: 0.0625 },
+            { name: "Mangaba Roxa", rarity: "Epica", emoji: "🍇", value: 11500, chance: 0.0625 },
+            { name: "Abacaxi Negro", rarity: "Epica", emoji: "🍍", value: 12000, chance: 0.0625 },
+            { name: "Jabuticaba Branca", rarity: "Epica", emoji: "⚪", value: 12500, chance: 0.0625 },
+            { name: "Atemoia Gigante", rarity: "Epica", emoji: "🍏", value: 13000, chance: 0.0625 },
+            { name: "Jaca Amarela", rarity: "Epica", emoji: "🟡", value: 13500, chance: 0.0625 },
+            { name: "Seriguela Roxa", rarity: "Epica", emoji: "💜", value: 14000, chance: 0.0625 },
+            { name: "Marolo Negro", rarity: "Epica", emoji: "🌑", value: 14500, chance: 0.0625 },
+            { name: "Sapota Preta", rarity: "Epica", emoji: "⚫", value: 15000, chance: 0.0625 },
+            { name: "Atemoia Rosa", rarity: "Epica", emoji: "💖", value: 15500, chance: 0.0625 },
+            { name: "Uva Gigante", rarity: "Epica", emoji: "🍇", value: 16000, chance: 0.0625 },
+            { name: "Coco Dourado", rarity: "Epica", emoji: "🥥", value: 16500, chance: 0.0625 },
+            { name: "Lichia Gigante", rarity: "Epica", emoji: "🔴", value: 17000, chance: 0.0625 },
+
+            // Frutas Lendárias (10) - Chance: 0.25%
+            { name: "Fruta do Dragão Negro", rarity: "Lendaria", emoji: "🖤", value: 30000, chance: 0.025 },
+            { name: "Cereja de Ouro", rarity: "Lendaria", emoji: "🥇", value: 35000, chance: 0.025 },
+            { name: "Caju de Fogo", rarity: "Lendaria", emoji: "🔥", value: 40000, chance: 0.025 },
+            { name: "Manga de Diamante", rarity: "Lendaria", emoji: "💎", value: 45000, chance: 0.025 },
+            { name: "Pêssego da Imortalidade", rarity: "Lendaria", emoji: "✨", value: 50000, chance: 0.025 },
+            { name: "Maçã de Adão", rarity: "Lendaria", emoji: "🍎", value: 55000, chance: 0.025 },
+            { name: "Uva Cósmica", rarity: "Lendaria", emoji: "🌌", value: 60000, chance: 0.025 },
+            { name: "Pera da Sabedoria", rarity: "Lendaria", emoji: "🧠", value: 65000, chance: 0.025 },
+            { name: "Ameixa da Eternidade", rarity: "Lendaria", emoji: "♾️", value: 70000, chance: 0.025 },
+            { name: "Melão Celestial", rarity: "Lendaria", emoji: "🌠", value: 75000, chance: 0.025 },
+
+            // Frutas Místicas (5) - Chance: 0.05%
+            { name: "Banana de Cristal", rarity: "Mistica", emoji: "🔮", value: 150000, chance: 0.01 },
+            { name: "Limão do Tempo", rarity: "Mistica", emoji: "⏳", value: 175000, chance: 0.01 },
+            { name: "Fruta do Destino", rarity: "Mistica", emoji: "🔮", value: 200000, chance: 0.01 },
+            { name: "Kiwi da Sorte", rarity: "Mistica", emoji: "🍀", value: 225000, chance: 0.01 },
+            { name: "Cereja do Esquecimento", rarity: "Mistica", emoji: "🫥", value: 250000, chance: 0.01 },
+
+            // Frutas God (3) - Chance: 0.008%
+            { name: "Amora da Criação", rarity: "God", emoji: "🌌", value: 500000, chance: 0.0026 },
+            { name: "Uva da Destruição", rarity: "God", emoji: "💥", value: 625000, chance: 0.0026 },
+            { name: "Pêssego da Vida", rarity: "God", emoji: "🌳", value: 750000, chance: 0.0026 },
+
+            // Frutas Demon (2) - Chance: 0.002%
+            { name: "Fruta do Caos", rarity: "Demon", emoji: "🌀", value: 2500000, chance: 0.001 },
+            { name: "Maçã Proibida", rarity: "Demon", emoji: "🍎🚫", value: 3750000, chance: 0.001 },
+
+            // Frutas Secretas (2) - Chance: 0.0005%
+            { name: "Nucleo de Cereja", rarity: "Secret", emoji: "🍒✨", value: 1500000, chance: 0.0005 },
+            { name: "Semente Dourada", rarity: "Divine", emoji: "⚜️", value: 100000000, chance: 0.0005 },
+        ];
+
+        const rarities = ["Comum", "Incomum", "Rara", "Epica", "Lendaria", "Mistica", "God", "Demon", "Secret", "Divine"];
+        
+        const pets = [
+            { name: "Coelho Sortudo", emoji: "🐇", cost: 10000, bonus: 500 },
+            { name: "Gato Pescador", emoji: "🐈", cost: 50000, bonus: 2000 },
+            { name: "Macaco Mágico", emoji: "🐒", cost: 250000, bonus: 10000 },
+            { name: "Dragão Dourado", emoji: "🐉", cost: 1000000, bonus: 50000 },
+            { name: "Fênix Flamejante", emoji: "🔥🐦", cost: 5000000, bonus: 250000 },
+            { name: "Cão da Fortuna", emoji: "🐕‍🦺", cost: 10000000, bonus: 500000 }
+        ];
+
+        let currentFruitList = [...fruits];
+
+        const fruitsByRarity = rarities.reduce((acc, rarity) => {
+            acc[rarity] = fruits.filter(f => f.rarity === rarity);
+            return acc;
+        }, {});
+
+        const rebirths = [
+            { cost: 1500, fruit: "Graviola", emoji: "🍈" },
+            { cost: 3000, fruit: "Jaca", emoji: "🍈" },
+            { cost: 5000, fruit: "Fruta-pão", emoji: "🥖" },
+            { cost: 10000, fruit: "Noni", emoji: "🤢" },
+            { cost: 20000, fruit: "Pitaia Amarela", emoji: "💛" },
+            { cost: 50000, fruit: "Uva Cósmica", emoji: "🌌" },
+            { cost: 100000, fruit: "Banana de Cristal", emoji: "🔮" },
+            { cost: 250000, fruit: "Amora da Criação", rarity: "God", emoji: "🌌" },
+            { cost: 500000, fruit: "Maçã Proibida", rarity: "Demon", emoji: "🍎🚫" },
+            { cost: 1000000, fruit: "Nucleo de Cereja", rarity: "Secret", emoji: "🍒✨" }
+        ];
+        
+        const admMessages = [
+            "O ADM está online! Prepare-se para a diversão. 🤖",
+            "O que a panela disse para a frigideira? Eu te dou a maior cobertura! 😂",
+            "Ei, viu meu emoji de rei? 👑 Fui eu que fiz!",
+            "O que o pão de forma foi fazer na academia? Malhar o corpo! 🍞",
+            "Perguntei para o tomate por que ele estava bravo. Ele respondeu: 'Não me pergunte, eu estou com raiva de tudo!' 😠",
+            "Faltam só 30 segundos! A surpresa está quase no ponto! 🎁",
+            "O que a chave disse para o cadeado? 'Estamos prestes a nos trancar!' 🗝️",
+            "A surpresa está chegando... só mais um pouquinho de paciência! 😉"
+        ];
+        
+        let passiveIncomeInterval;
+        let admEventCheckInterval;
+        let merchantCheckInterval;
+
+        function formatMoney(amount) {
+            if (amount >= 1000000000) {
+                return (amount / 1000000000).toFixed(2) + 'B';
+            }
+            if (amount >= 1000000) {
+                return (amount / 1000000).toFixed(2) + 'M';
+            }
+            if (amount >= 1000) {
+                return (amount / 1000).toFixed(2) + 'K';
+            }
+            return amount.toFixed(2);
+        }
+
+        function showNotification(message, duration = 4000) {
+            notificationMessage.textContent = message;
+            notificationMessage.classList.add('show');
+            setTimeout(() => {
+                notificationMessage.classList.remove('show');
+            }, duration);
+        }
+
+        function saveGame() {
+            if (loggedInUser) {
+                const userData = {
+                    money,
+                    inventory,
+                    firstSpin,
+                    rebirthCount,
+                    inventoryCapacity,
+                    obtainedFruits,
+                    spinCount,
+                    obtainedPets,
+                    equippedPet,
+                    sessionElapsedTime
+                };
+                localStorage.setItem(`userData_${loggedInUser}`, JSON.stringify(userData));
+                localStorage.setItem(`userPassword_${loggedInUser}`, passwordInput.value);
+            }
+        }
+
+        function loadGame(username) {
+            const userData = JSON.parse(localStorage.getItem(`userData_${username}`));
+            if (userData) {
+                money = userData.money;
+                inventory = userData.inventory;
+                firstSpin = userData.firstSpin;
+                rebirthCount = userData.rebirthCount;
+                inventoryCapacity = userData.inventoryCapacity;
+                obtainedFruits = userData.obtainedFruits || [];
+                spinCount = userData.spinCount || 0;
+                obtainedPets = userData.obtainedPets || [];
+                equippedPet = userData.equippedPet || null;
+                sessionElapsedTime = userData.sessionElapsedTime || 0;
+            } else {
+                money = 0;
+                inventory = {};
+                firstSpin = true;
+                rebirthCount = 0;
+                inventoryCapacity = 10;
+                obtainedFruits = [];
+                spinCount = 0;
+                obtainedPets = [];
+                equippedPet = null;
+                sessionElapsedTime = 0;
+            }
+            updateUI();
+        }
+
+        function updateSessionTimer() {
+            const now = Date.now();
+            sessionElapsedTime += (now - sessionStartTime) / 1000;
+            sessionStartTime = now;
+            
+            const hours = Math.floor(sessionElapsedTime / 3600);
+            const minutes = Math.floor((sessionElapsedTime % 3600) / 60);
+            const seconds = Math.floor(sessionElapsedTime % 60);
+            
+            sessionTimerDisplay.textContent = `Tempo Online: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function startSessionTimer() {
+            sessionStartTime = Date.now();
+            sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+            sessionTimerDisplay.style.display = 'block';
+        }
+        
+        function stopSessionTimer() {
+            clearInterval(sessionTimerInterval);
+            sessionTimerDisplay.style.display = 'none';
+        }
+
+        function updateUI() {
+            moneyDisplay.textContent = formatMoney(money);
+            rebirthCountDisplay.textContent = rebirthCount;
+            inventoryCapacityDisplay.textContent = inventoryCapacity;
+            spinCostDisplay.textContent = firstSpin ? "1º Giro Grátis!" : `Custo: $${formatMoney(currentSpinCost)}`;
+            updateInventoryInfo();
+            
+            if (loggedInUser === ADMIN_USER) {
+                adminBtn.style.display = 'inline-block';
+            } else {
+                adminBtn.style.display = 'none';
+            }
+
+            if (!activeEvent) {
+                const spinsLeft = SPINS_FOR_DISCOUNT - (spinCount % SPINS_FOR_DISCOUNT);
+                eventTimerDisplay.textContent = `Desconto em ${spinsLeft} giros!`;
+            }
+            
+            merchantTimerDisplay.textContent = `Comerciante em: ${merchantCountdown}s`;
+            logoutBtn.style.display = 'block';
+        }
+        
+        function startGameSession(username) {
+            loggedInUser = username;
+            loginPanel.style.display = 'none';
+            gamePanel.style.display = 'block';
+            loadGame(username);
+            
+            if (passiveIncomeInterval) clearInterval(passiveIncomeInterval);
+            passiveIncomeInterval = setInterval(() => {
+                const passiveIncome = calculateTotalPassiveIncome();
+                money += passiveIncome;
+                updateMoneyDisplay();
+                saveGame();
+            }, 1000);
+
+            if (admEventCheckInterval) clearInterval(admEventCheckInterval);
+            admEventCheckInterval = setInterval(checkAdmEventChance, 60000);
+
+            if (merchantCheckInterval) clearInterval(merchantCheckInterval);
+            merchantCheckInterval = setInterval(updateMerchantTimer, 1000);
+
+            startSessionTimer();
+            
+            showNotification(`Bem-vindo, ${username}! 🎉`);
+        }
+
+        function logout() {
+            saveGame();
+            
+            if (passiveIncomeInterval) clearInterval(passiveIncomeInterval);
+            if (admEventCheckInterval) clearInterval(admEventCheckInterval);
+            if (merchantCheckInterval) clearInterval(merchantCheckInterval);
+            if (eventInterval) clearInterval(eventInterval);
+            if (admMessageInterval) clearInterval(admMessageInterval);
+            stopSessionTimer();
+
+            loggedInUser = null;
+            loginPanel.style.display = 'flex';
+            gamePanel.style.display = 'none';
+            
+            money = 0;
+            inventory = {};
+            firstSpin = true;
+            rebirthCount = 0;
+            inventoryCapacity = 10;
+            obtainedFruits = [];
+            spinCount = 0;
+            activeEvent = null;
+            currentSpinCost = BASE_SPIN_COST;
+            merchantCountdown = 60;
+            obtainedPets = [];
+            equippedPet = null;
+            sessionElapsedTime = 0;
+            
+            updateUI();
+            resetEvent();
+            logoutBtn.style.display = 'none';
+            
+            showNotification('Sessão encerrada. Até a próxima! 👋');
+        }
+
+        loginBtn.addEventListener('click', () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            
+            if (!username || !password) {
+                showNotification('Nome de usuário e senha são obrigatórios.');
+                return;
+            }
+            
+            const storedPassword = localStorage.getItem(`userPassword_${username}`);
+
+            if (storedPassword) {
+                if (storedPassword === password) {
+                    startGameSession(username);
+                } else {
+                    showNotification('Senha incorreta! ❌');
+                }
+            } else {
+                localStorage.setItem(`userData_${username}`, JSON.stringify({
+                    money: 0,
+                    inventory: {},
+                    firstSpin: true,
+                    rebirthCount: 0,
+                    inventoryCapacity: 10,
+                    obtainedFruits: [],
+                    spinCount: 0,
+                    obtainedPets: [],
+                    equippedPet: null,
+                    sessionElapsedTime: 0
+                }));
+                localStorage.setItem(`userPassword_${username}`, password);
+                startGameSession(username);
+            }
+        });
+        
+        logoutBtn.addEventListener('click', logout);
+
+        function getRandomFruit() {
+            let totalChance = currentFruitList.reduce((sum, fruit) => sum + fruit.chance, 0);
+            let randomNumber = Math.random() * totalChance;
+            
+            for (let fruit of currentFruitList) {
+                if (randomNumber < fruit.chance) {
+                    return fruit;
+                }
+                randomNumber -= fruit.chance;
+            }
+            return currentFruitList[0];
+        }
+
+        function updateMoneyDisplay() {
+            moneyDisplay.textContent = formatMoney(money);
+        }
+
+        function updateInventoryInfo() {
+            const currentFruitsCount = Object.values(inventory).reduce((sum, fruit) => sum + fruit.count, 0);
+            inventoryCapacityDisplay.textContent = `${currentFruitsCount}/${inventoryCapacity} 📦`;
+            spinBtn.disabled = currentFruitsCount >= inventoryCapacity;
+        }
+        
+        function calculateTotalPassiveIncome() {
+            let passiveIncome = 0;
+            for (const fruitName in inventory) {
+                const fruit = inventory[fruitName];
+                passiveIncome += (fruit.value * 0.005) * fruit.count;
+            }
+            return passiveIncome;
+        }
+
+        function addToInventory(fruit) {
+            if (!inventory[fruit.name]) {
+                inventory[fruit.name] = { ...fruit, count: 0 };
+            }
+            inventory[fruit.name].count++;
+            
+            if (!obtainedFruits.includes(fruit.name)) {
+                obtainedFruits.push(fruit.name);
+            }
+        }
+
+        function sellFruit(fruitName) {
+            const fruit = inventory[fruitName];
+            if (fruit && fruit.count > 0) {
+                money += fruit.value;
+                fruit.count--;
+                updateMoneyDisplay();
+                showNotification(`Você vendeu 1x ${fruit.name} por $${formatMoney(fruit.value)}! 💰`);
+                if (fruit.count === 0) {
+                    delete inventory[fruitName];
+                }
+                renderInventory();
+                updateInventoryInfo();
+                saveGame();
+            }
+        }
+
+        function resetEvent() {
+            activeEvent = null;
+            clearInterval(eventInterval);
+            clearInterval(admMessageInterval);
+            eventOverlay.className = 'event-overlay';
+            currentSpinCost = BASE_SPIN_COST;
+            updateUI();
+            
+            currentFruitList = [...fruits];
+            admMessageContainer.style.display = 'none';
+            eventTimerDisplay.classList.remove('countdown');
+            updateUI();
+        }
+        
+        function startEvent(eventName) {
+            if (activeEvent) return;
+            
+            activeEvent = eventName;
+            eventTimerDisplay.classList.add('countdown');
+            
+            if (eventName === 'discount') {
+                eventCountdown = 60;
+                currentSpinCost = Math.round(BASE_SPIN_COST * 0.30);
+                showNotification("🎉 Evento de Desconto! Giros 70% mais baratos por 60s!");
+                updateUI();
+                eventInterval = setInterval(() => {
+                    eventCountdown--;
+                    eventTimerDisplay.textContent = `Evento de Desconto: ${eventCountdown}s`;
+                    if (eventCountdown <= 0) resetEvent();
+                }, 1000);
+            } else if (eventName === 'adm') {
+                eventCountdown = 120;
+                eventOverlay.classList.add('adm-event');
+                admMessageContainer.style.display = 'block';
+                showNotification("👑 O Evento do ADM começou! O que será que ele está tramando? 👀");
+
+                let messageIndex = 0;
+                admMessageInterval = setInterval(() => {
+                    if (messageIndex < admMessages.length) {
+                        admMessageDisplay.textContent = admMessages[messageIndex];
+                        messageIndex++;
+                    } else {
+                        messageIndex = 0;
+                    }
+                }, 10000);
+                
+                eventInterval = setInterval(() => {
+                    eventCountdown--;
+                    eventTimerDisplay.textContent = `Evento do ADM: ${eventCountdown}s`;
+                    if (eventCountdown <= 10 && eventCountdown > 0) {
+                        admMessageDisplay.textContent = "Surpresa no inventário em breve! 🎁";
+                    }
+                    if (eventCountdown <= 0) {
+                        clearInterval(admMessageInterval);
+                        admMessageDisplay.textContent = "O ADM se foi... Até a próxima! 👋";
+                        
+                        const rareFruits = fruits.filter(f => f.rarity === 'Rara');
+                        const randomRareFruit = rareFruits[Math.floor(Math.random() * rareFruits.length)];
+                        addToInventory(randomRareFruit);
+                        updateInventoryInfo();
+                        showNotification(`O ADM te deu uma ${randomRareFruit.name}! 🎉`, 8000);
+                        
+                        setTimeout(() => {
+                           resetEvent();
+                        }, 5000);
+                    }
+                }, 1000);
+            }
+        }
+
+        function checkAdmEventChance() {
+            if (activeEvent) return;
+            const eventChance = Math.random() * 100;
+            
+            if (eventChance < 1.5) {
+                startEvent('adm');
+            }
+        }
+
+        function updateMerchantTimer() {
+            if (merchantCountdown <= 0) {
+                showMerchantModal();
+                merchantCountdown = 60;
+            } else {
+                merchantCountdown--;
+            }
+            merchantTimerDisplay.textContent = `Comerciante em: ${merchantCountdown}s`;
+        }
+        
+        function showMerchantModal() {
+            merchantList.innerHTML = '';
+            const allFruitsWithoutAdm = fruits.filter(f => f.rarity !== 'ADM');
+            const fruitsForSale = [];
+
+            while(fruitsForSale.length < 5) {
+                const randomFruit = allFruitsWithoutAdm[Math.floor(Math.random() * allFruitsWithoutAdm.length)];
+                if (!fruitsForSale.some(f => f.name === randomFruit.name)) {
+                    fruitsForSale.push(randomFruit);
+                }
+            }
+
+            fruitsForSale.forEach(fruit => {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('item');
+                itemDiv.classList.add(`rarity-${fruit.rarity.replace(' ', '')}`);
+                
+                itemDiv.innerHTML = `
+                    <span>${fruit.emoji}</span>
+                    <p>${fruit.name}</p>
+                    <small>Raridade: ${fruit.rarity}</small>
+                    <button data-cost="${fruit.value}" data-fruit-name="${fruit.name}">Comprar por $${formatMoney(fruit.value)}</button>
+                `;
+                merchantList.appendChild(itemDiv);
+            });
+            
+            merchantModal.style.display = 'flex';
+        }
+
+        function spin() {
+            const currentFruitsCount = Object.values(inventory).reduce((sum, fruit) => sum + fruit.count, 0);
+            if (currentFruitsCount >= inventoryCapacity) {
+                showNotification("Inventário cheio! Venda algumas frutas. 🗑️");
+                return;
+            }
+            
+            const cost = firstSpin ? 0 : currentSpinCost;
+            if (money < cost) {
+                showNotification(`Dinheiro Insuficiente! 😭 Requer $${formatMoney(cost)}`);
+                return;
+            }
+
+            spinBtn.disabled = true;
+            if (!firstSpin) {
+                money -= cost;
+                updateMoneyDisplay();
+            }
+
+            spinCount++;
+            if (spinCount % SPINS_FOR_DISCOUNT === 0 && !activeEvent) {
+                startEvent('discount');
+            }
+            
+            const spinsLeft = SPINS_FOR_DISCOUNT - (spinCount % SPINS_FOR_DISCOUNT);
+            if (!activeEvent) {
+                eventTimerDisplay.textContent = `Desconto em ${spinsLeft} giros!`;
+            }
+
+            if (equippedPet) {
+                money += equippedPet.bonus;
+                updateMoneyDisplay();
+            }
+
+            fruitNameDisplay.textContent = "";
+            fruitRarityDisplay.textContent = "";
+            slot.className = 'slot';
+            
+            let count = 0;
+            const result = getRandomFruit();
+            
+            const interval = setInterval(() => {
+                slot.textContent = fruits[Math.floor(Math.random() * fruits.length)].emoji;
+                count++;
+                
+                if (count > 30) {
+                    clearInterval(interval);
+                    slot.textContent = result.emoji;
+                    slot.classList.add(`rarity-${result.rarity.replace(' ', '')}`);
+                    fruitNameDisplay.textContent = result.name;
+                    fruitRarityDisplay.textContent = result.rarity;
+
+                    money += result.value;
+                    addToInventory(result);
+                    updateMoneyDisplay();
+                    updateInventoryInfo();
+                    spinBtn.disabled = false;
+                    
+                    if (firstSpin) {
+                        firstSpin = false;
+                        spinCostDisplay.textContent = `Custo: $${formatMoney(currentSpinCost)}`;
+                    }
+                    saveGame();
+                }
+            }, 50);
+        }
+
+        function performRebirth(rebirthLevel) {
+            const req = rebirths[rebirthLevel - 1];
+            const fruitCount = inventory[req.fruit] ? inventory[req.fruit].count : 0;
+
+            if (money >= req.cost && fruitCount >= 1) {
+                money = (rebirthLevel) * 350;
+                inventory = {};
+                rebirthCount++;
+                inventoryCapacity += 10;
+                firstSpin = true;
+                
+                updateMoneyDisplay();
+                rebirthCountDisplay.textContent = rebirthCount;
+                spinCostDisplay.textContent = `1º Giro Grátis!`;
+                
+                showNotification(`Rebirth ${rebirthLevel} realizado com sucesso! 🎉 Nova capacidade: ${inventoryCapacity}`);
+                
+                renderRebirthPanel();
+                updateInventoryInfo();
+                inventoryModal.style.display = 'none';
+                rebirthModal.style.display = 'none';
+                saveGame();
+            } else {
+                let message = "Você não cumpre os requisitos! 🚫 ";
+                if (money < req.cost) {
+                    message += `Requer $${formatMoney(req.cost)}. `;
+                }
+                if (fruitCount < 1) {
+                    message += `Requer 1x ${req.fruit}.`;
+                }
+                showNotification(message);
+            }
+        }
+
+        function renderRebirthPanel() {
+            rebirthList.innerHTML = '';
+            const currentRebirthIndex = rebirthCount;
+            
+            for (let i = 0; i < rebirths.length; i++) {
+                const req = rebirths[i];
+                const rebirthLevel = i + 1;
+                
+                const panel = document.createElement('div');
+                panel.classList.add('rebirth-stage');
+                
+                const fruitCount = inventory[req.fruit] ? inventory[req.fruit].count : 0;
+                const canRebirth = money >= req.cost && fruitCount >= 1;
+                
+                let status = '';
+                let btnText = '';
+                let btnDisabled = true;
+                
+                if (i < currentRebirthIndex) {
+                    status = 'Completo ✅';
+                    btnText = 'Completado';
+                    btnDisabled = true;
+                    panel.style.opacity = '0.7';
+                } else if (i === currentRebirthIndex) {
+                    status = 'Próximo Rebirth ➡️';
+                    btnText = 'Fazer Rebirth';
+                    btnDisabled = !canRebirth;
+                    panel.classList.add('unlocked');
+                } else {
+                    status = 'Bloqueado 🔒';
+                    btnText = 'Bloqueado';
+                    btnDisabled = true;
+                    panel.style.opacity = '0.5';
+                }
+
+                panel.innerHTML = `
+                    <h4>Rebirth ${rebirthLevel}</h4>
+                    <p>Status: ${status}</p>
+                    <p>Requisitos:</p>
+                    <ul>
+                        <li>Dinheiro: ${money >= req.cost ? '✅' : '❌'} $${formatMoney(req.cost)}</li>
+                        <li>Fruta: ${fruitCount >= 1 ? '✅' : '❌'} 1x ${req.fruit} ${req.emoji}</li>
+                    </ul>
+                    <button id="rebirth-btn-${rebirthLevel}" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
+                `;
+                
+                rebirthList.appendChild(panel);
+                
+                if (i === currentRebirthIndex) {
+                    document.getElementById(`rebirth-btn-${rebirthLevel}`).addEventListener('click', () => {
+                        performRebirth(rebirthLevel);
+                    });
+                }
+            }
+        }
+
+        function renderInventory() {
+            inventoryList.innerHTML = '';
+            const sortedFruits = Object.values(inventory).sort((a, b) => {
+                return rarities.indexOf(a.rarity) - rarities.indexOf(b.rarity);
+            });
+            
+            const totalPassiveIncome = calculateTotalPassiveIncome();
+            inventoryTotalIncomeDisplay.textContent = `Renda Passiva Total: $${totalPassiveIncome.toFixed(2)}/s`;
+
+            for (const fruit of sortedFruits) {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('item', 'inventory-item');
+                itemDiv.dataset.fruitName = fruit.name;
+                itemDiv.classList.add(`rarity-${fruit.rarity.replace(' ', '')}`);
+                
+                const incomePerSecond = (fruit.value * 0.005).toFixed(2);
+                
+                itemDiv.innerHTML = `
+                    <span>${fruit.emoji}</span>
+                    <p>${fruit.name}</p>
+                    <small>Raridade: ${fruit.rarity}</small>
+                    <small>Qtd: x${fruit.count}</small>
+                    <small>Valor: $${formatMoney(fruit.value)}</small>
+                    <small>Renda/s: +$${incomePerSecond}</small>
+                `;
+                inventoryList.appendChild(itemDiv);
+            }
+            if (Object.keys(inventory).length === 0) {
+                inventoryTotalIncomeDisplay.textContent = 'Renda Passiva Total: $0.00/s';
+                inventoryList.innerHTML = '<p style="grid-column: 1 / -1; text-align: center;">Seu inventário está vazio. Gire para começar! 🍎</p>';
+            }
+        }
+        
+        function renderCatalog() {
+            catalogList.innerHTML = '';
+            
+            for (const rarity of rarities) {
+                const section = document.createElement('div');
+                section.classList.add('catalog-section');
+                
+                const sectionTitle = document.createElement('h3');
+                sectionTitle.textContent = rarity;
+                sectionTitle.classList.add(`rarity-${rarity.replace(' ', '')}`);
+                section.appendChild(sectionTitle);
+                
+                const grid = document.createElement('div');
+                grid.classList.add('item-grid');
+                
+                const fruitsInRarity = fruitsByRarity[rarity] || [];
+                
+                for (const fruit of fruitsInRarity) {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.classList.add('item');
+                    itemDiv.classList.add(`rarity-${fruit.rarity.replace(' ', '')}`);
+                    
+                    const isObtained = obtainedFruits.includes(fruit.name);
+                    if (!isObtained) {
+                        itemDiv.classList.add('unobtained');
+                    }
+                    
+                    const value = isObtained ? `$${formatMoney(fruit.value)}` : "???";
+                    
+                    itemDiv.innerHTML = `
+                        <span>${fruit.emoji}</span>
+                        <p>${fruit.name}</p>
+                        <small>Valor: ${value}</small>
+                    `;
+                    grid.appendChild(itemDiv);
+                }
+                
+                section.appendChild(grid);
+                catalogList.appendChild(section);
+            }
+        }
+        
+        function renderPetShop() {
+            petshopList.innerHTML = '';
+            for(const pet of pets) {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('item');
+                
+                const hasPet = obtainedPets.includes(pet.name);
+                const isEquipped = equippedPet && equippedPet.name === pet.name;
+                
+                if (isEquipped) {
+                    itemDiv.classList.add('equiped');
+                }
+
+                itemDiv.innerHTML = `
+                    <span>${pet.emoji}</span>
+                    <p>${pet.name}</p>
+                    <small>Bônus por giro: +$${formatMoney(pet.bonus)}</small>
+                    ${hasPet ? `<button data-pet-name="${pet.name}" class="equip-btn">${isEquipped ? 'Equipado' : 'Equipar'}</button>` : `<button data-pet-name="${pet.name}" class="buy-btn">Comprar por $${formatMoney(pet.cost)}</button>`}
+                `;
+
+                petshopList.appendChild(itemDiv);
+            }
+        }
+        
+        function handlePetShopClick(event) {
+            const btn = event.target.closest('button');
+            if (!btn) return;
+            
+            const petName = btn.dataset.petName;
+            const pet = pets.find(p => p.name === petName);
+
+            if (btn.classList.contains('buy-btn')) {
+                if (money >= pet.cost) {
+                    money -= pet.cost;
+                    obtainedPets.push(pet.name);
+                    equippedPet = pet;
+                    updateMoneyDisplay();
+                    showNotification(`Você comprou e equipou o ${pet.name}! 🎉`);
+                    renderPetShop();
+                    saveGame();
+                } else {
+                    showNotification(`Dinheiro Insuficiente! Requer $${formatMoney(pet.cost)}.`);
+                }
+            } else if (btn.classList.contains('equip-btn')) {
+                equippedPet = pet;
+                showNotification(`Você equipou o ${pet.name}! 🐾`);
+                renderPetShop();
+                saveGame();
+            }
+        }
+        
+        function renderAdminPanel() {
+            adminFruitList.innerHTML = '';
+            const allFruits = [...fruits].sort((a,b) => rarities.indexOf(a.rarity) - rarities.indexOf(b.rarity));
+
+            for(const fruit of allFruits) {
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('item');
+                itemDiv.dataset.fruitName = fruit.name;
+                itemDiv.classList.add(`rarity-${fruit.rarity.replace(' ', '')}`);
+                
+                itemDiv.innerHTML = `
+                    <span>${fruit.emoji}</span>
+                    <p>${fruit.name}</p>
+                    <small>${fruit.rarity}</small>
+                `;
+
+                itemDiv.addEventListener('click', () => {
+                    const fruitToAdd = fruits.find(f => f.name === fruit.name);
+                    if (fruitToAdd) {
+                        addToInventory(fruitToAdd);
+                        updateInventoryInfo();
+                        showNotification(`Você spawnou uma ${fruit.name}! 🎁`);
+                        saveGame();
+                    }
+                });
+                adminFruitList.appendChild(itemDiv);
+            }
+        }
+
+        spinBtn.addEventListener('click', spin);
+        inventoryBtn.addEventListener('click', () => {
+            renderInventory();
+            inventoryModal.style.display = 'flex';
+        });
+        catalogBtn.addEventListener('click', () => {
+            renderCatalog();
+            catalogModal.style.display = 'flex';
+        });
+        rebirthBtn.addEventListener('click', () => {
+            renderRebirthPanel();
+            rebirthModal.style.display = 'flex';
+        });
+        adminBtn.addEventListener('click', () => {
+            renderAdminPanel();
+            adminPanel.style.display = 'flex';
+        });
+        petshopBtn.addEventListener('click', () => {
+            renderPetShop();
+            petshopModal.style.display = 'flex';
+        });
+        petshopList.addEventListener('click', handlePetShopClick);
+
+        admEventMoneyBtn.addEventListener('click', () => {
+             const amount = Math.floor(Math.random() * 4669) + 10;
+             money += amount;
+             updateMoneyDisplay();
+             showNotification(`💸 O ADM te deu $${formatMoney(amount)}!`);
+        });
+        admEventDiscountBtn.addEventListener('click', () => startEvent('discount'));
+        admEventAdmBtn.addEventListener('click', () => startEvent('adm'));
+
+        closeBtns.forEach(btn => {
+            btn.addEventListener('click', (event) => {
+                const modal = event.target.closest('.modal');
+                if (modal) {
+                    modal.style.display = 'none';
+                    if (modal.id === 'merchant-modal') {
+                        merchantCountdown = 60;
+                        merchantTimerDisplay.textContent = `Comerciante em: ${merchantCountdown}s`;
+                    }
+                }
+            });
+        });
+        
+        window.addEventListener('click', (event) => {
+            if (event.target === inventoryModal) inventoryModal.style.display = 'none';
+            if (event.target === catalogModal) catalogModal.style.display = 'none';
+            if (event.target === rebirthModal) rebirthModal.style.display = 'none';
+            if (event.target === adminPanel) adminPanel.style.display = 'none';
+            if (event.target === petshopModal) petshopModal.style.display = 'none';
+            if (event.target === merchantModal) {
+                 merchantModal.style.display = 'none';
+                 merchantCountdown = 60;
+                 merchantTimerDisplay.textContent = `Comerciante em: ${merchantCountdown}s`;
+            }
+        });
+        
+        inventoryList.addEventListener('click', (event) => {
+            const item = event.target.closest('.inventory-item');
+            if (item) {
+                const fruitName = item.dataset.fruitName;
+                sellFruit(fruitName);
+            }
+        });
+
+        merchantList.addEventListener('click', (event) => {
+            const btn = event.target.closest('button');
+            if (btn) {
+                const cost = parseFloat(btn.dataset.cost);
+                const fruitName = btn.dataset.fruitName;
+
+                if (Object.values(inventory).reduce((sum, f) => sum + f.count, 0) >= inventoryCapacity) {
+                    showNotification("Inventário cheio! Não é possível comprar mais frutas.");
+                    return;
+                }
+
+                if (money >= cost) {
+                    money -= cost;
+                    const fruitToBuy = fruits.find(f => f.name === fruitName);
+                    addToInventory(fruitToBuy);
+                    updateMoneyDisplay();
+                    updateInventoryInfo();
+                    showNotification(`Você comprou uma ${fruitName} por $${formatMoney(cost)}!`);
+                    saveGame();
+                    merchantModal.style.display = 'none';
+                    merchantCountdown = 60;
+                    merchantTimerDisplay.textContent = `Comerciante em: ${merchantCountdown}s`;
+                } else {
+                    showNotification("Dinheiro insuficiente para comprar esta fruta.");
+                }
+            }
+        });
+
+        // Inicializa o jogo mostrando o painel de login
+        loginPanel.style.display = 'flex';
+    </script>
+</body>
+</html>
